@@ -11,6 +11,8 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 
+import org.jak_linux.dns66.WhitelistActivity;
+
 import java.util.ArrayList;
 
 /**
@@ -26,6 +28,7 @@ public class MainFragmentPagerAdapter extends FragmentPagerAdapter {
         fragments.add(new StartFragment());
         fragments.add(new HostsFragment());
         fragments.add(new DNSFragment());
+        fragments.add(new WhitelistActivity());
     }
 
     @Override
