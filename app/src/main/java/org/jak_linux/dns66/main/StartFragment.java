@@ -14,6 +14,7 @@ import android.content.Intent;
 import android.net.VpnService;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -68,6 +69,26 @@ public class StartFragment extends Fragment {
                 return true;
             }
         });
+
+        ImageView startButton = (ImageView) rootView.findViewById(R.id.start_button);
+
+        switch(AdVpnService.vpnStatus) {
+            case AdVpnService.VPN_STATUS_RECONNECTING:
+            case AdVpnService.VPN_STATUS_STARTING:
+            case AdVpnService.VPN_STATUS_STOPPING:
+                startButton.getDrawable().setTint(ContextCompat.getColor(getContext(), R.color.stateChanging));
+                break;
+            case AdVpnService.VPN_STATUS_STOPPED:
+                startButton.getDrawable().setTint(ContextCompat.getColor(getContext(), R.color.stateStopped));
+                break;
+            case AdVpnService.VPN_STATUS_RUNNING:
+                startButton.getDrawable().setTint(ContextCompat.getColor(getContext(), R.color.stateRunning));
+                break;
+            case AdVpnService.VPN_STATUS_RECONNECTING_NETWORK_ERROR:
+                startButton.getDrawable().setTint(ContextCompat.getColor(getContext(), R.color.stateError));
+                break;
+        }
+
 
         switchOnBoot.setChecked(MainActivity.config.autoStart);
         switchOnBoot.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {

@@ -7,4 +7,9 @@
     <color name="colorPrimaryDarkFriend2">#1976D2</color>
     <color name="colorPrimaryDarkFriend3">#0097A7</color>
     <color name="colorAccent">#FF4081</color>
+    <color name="stateRunning">#000000</color>
+    <color name="stateStopped">#9E9E9E</color>
+    <color name="stateChanging">#616161</color>
+    <color name="stateError">#F44336</color>
+
 </resources>
