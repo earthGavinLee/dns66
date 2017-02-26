@@ -15,7 +15,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,6 +35,7 @@ import java.util.List;
  */
 public class WhitelistActivity extends Fragment {
 
+    private static final String TAG = "Whitelist";
     private AppListGenerator appListGenerator;
     private ListView appList;
     private SwipeRefreshLayout swipeRefresh;
@@ -80,8 +80,31 @@ public class WhitelistActivity extends Fragment {
 
             final ListEntry entry = getItem(position);
 
-            ImageView iconView = (ImageView) convertView.findViewById(R.id.app_icon);
-            iconView.setImageDrawable(entry.getIcon());
+            final ImageView iconView = (ImageView) convertView.findViewById(R.id.app_icon);
+            iconView.setVisibility(View.INVISIBLE);
+
+            AsyncTask<ListEntry, Void, Drawable> task = (AsyncTask<ListEntry, Void, Drawable>) convertView.getTag();
+            if (task != null)
+                task.cancel(true);
+
+            task = new AsyncTask<ListEntry, Void, Drawable>() {
+                @Override
+                protected Drawable doInBackground (ListEntry...entries){
+                    return entries[0].getAppInfo().loadIcon(getContext().getPackageManager());
+                }
+
+                @Override
+                protected void onPostExecute (Drawable drawable){
+                    if (!isCancelled()) {
+                        iconView.setImageDrawable(drawable);
+                        iconView.setVisibility(View.VISIBLE);
+                    }
+                    super.onPostExecute(drawable);
+                }
+            }
+            convertView.setTag(task);
+
+            task.execute(entry);
 
             TextView textView = (TextView) convertView.findViewById(R.id.name);
             textView.setText(entry.getLabel());
@@ -113,9 +136,11 @@ public class WhitelistActivity extends Fragment {
     }
 
     private final class AppListGenerator extends AsyncTask<Void, Void, AppListAdapter> {
+        private PackageManager pm;
+
         @Override
         protected AppListAdapter doInBackground(Void... params) {
-            final PackageManager pm = getContext().getPackageManager();
+            pm = getContext().getPackageManager();
 
             List<ApplicationInfo> info = pm.getInstalledApplications(0);
 
@@ -125,10 +150,11 @@ public class WhitelistActivity extends Fragment {
             for (ApplicationInfo appInfo : info) {
                 if (!appInfo.packageName.equals(BuildConfig.APPLICATION_ID))
                     entries.add(new ListEntry(
-                            appInfo.loadIcon(pm),
+                            appInfo,
                             appInfo.packageName,
                             appInfo.loadLabel(pm).toString()));
             }
+
 
             return new AppListAdapter(getContext(), R.layout.whitelist_row, entries);
         }
@@ -141,12 +167,12 @@ public class WhitelistActivity extends Fragment {
     }
 
     private class ListEntry {
-        private Drawable icon;
+        private ApplicationInfo appInfo;
         private String packageName;
         private String label;
 
-        private ListEntry(Drawable icon, String packageName, String label) {
-            this.icon = icon;
+        private ListEntry(ApplicationInfo appInfo, String packageName, String label) {
+            this.appInfo = appInfo;
             this.packageName = packageName;
             this.label = label;
         }
@@ -159,8 +185,8 @@ public class WhitelistActivity extends Fragment {
             return label;
         }
 
-        private Drawable getIcon() {
-            return icon;
+        private ApplicationInfo getAppInfo() {
+            return appInfo;
         }
     }
 }
