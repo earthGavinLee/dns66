@@ -24,6 +24,7 @@ import android.widget.ListView;
 import android.widget.Switch;
 import android.widget.TextView;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -81,30 +82,39 @@ public class WhitelistActivity extends Fragment {
             final ListEntry entry = getItem(position);
 
             final ImageView iconView = (ImageView) convertView.findViewById(R.id.app_icon);
-            iconView.setVisibility(View.INVISIBLE);
 
             AsyncTask<ListEntry, Void, Drawable> task = (AsyncTask<ListEntry, Void, Drawable>) convertView.getTag();
             if (task != null)
                 task.cancel(true);
 
-            task = new AsyncTask<ListEntry, Void, Drawable>() {
-                @Override
-                protected Drawable doInBackground (ListEntry...entries){
-                    return entries[0].getAppInfo().loadIcon(getContext().getPackageManager());
-                }
+            task = null;
+            final Drawable icon = entry.getIcon();
+            if (icon != null) {
+                iconView.setImageDrawable(icon);
+                iconView.setVisibility(View.VISIBLE);
+                convertView.setTag(null);
+            } else {
+                iconView.setVisibility(View.INVISIBLE);
 
-                @Override
-                protected void onPostExecute (Drawable drawable){
-                    if (!isCancelled()) {
-                        iconView.setImageDrawable(drawable);
-                        iconView.setVisibility(View.VISIBLE);
+                task = new AsyncTask<ListEntry, Void, Drawable>() {
+                    @Override
+                    protected Drawable doInBackground(ListEntry... entries) {
+                        return entries[0].loadIcon(getContext().getPackageManager());
                     }
-                    super.onPostExecute(drawable);
-                }
-            }
-            convertView.setTag(task);
 
-            task.execute(entry);
+                    @Override
+                    protected void onPostExecute(Drawable drawable) {
+                        if (!isCancelled()) {
+                            iconView.setImageDrawable(drawable);
+                            iconView.setVisibility(View.VISIBLE);
+                        }
+                        super.onPostExecute(drawable);
+                    }
+                };
+                convertView.setTag(task);
+
+                task.execute(entry);
+            }
 
             TextView textView = (TextView) convertView.findViewById(R.id.name);
             textView.setText(entry.getLabel());
@@ -170,6 +180,7 @@ public class WhitelistActivity extends Fragment {
         private ApplicationInfo appInfo;
         private String packageName;
         private String label;
+        private WeakReference<Drawable> weakIcon;
 
         private ListEntry(ApplicationInfo appInfo, String packageName, String label) {
             this.appInfo = appInfo;
@@ -187,6 +198,19 @@ public class WhitelistActivity extends Fragment {
 
         private ApplicationInfo getAppInfo() {
             return appInfo;
+        }
+
+        private Drawable getIcon() {
+            return weakIcon != null ? weakIcon.get() : null;
+        }
+
+        private Drawable loadIcon(PackageManager pm) {
+            Drawable icon = weakIcon != null ? weakIcon.get() : null;
+            if (icon == null) {
+                icon = appInfo.loadIcon(pm);
+                weakIcon = new WeakReference<>(icon);
+            }
+            return icon;
         }
     }
 }
